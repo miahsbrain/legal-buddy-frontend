@@ -1,10 +1,35 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FileText, Clock, CheckCircle, Plus } from "lucide-react";
 import { Button } from "../components/ui/Button";
-import { userContracts } from "../data/dummyData";
+import { ContractsAPI, type Contract } from "../api/contractsApi";
 
 export const DashboardPage: React.FC = () => {
+  const [contracts, setContracts] = useState<Contract[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchContracts = async () => {
+      try {
+        setLoading(true);
+        const response = await ContractsAPI.getUserContracts();
+        if (response.success) {
+          setContracts(response.data);
+        } else {
+          setError("Failed to fetch contracts");
+        }
+      } catch (err) {
+        console.error("Error fetching contracts:", err);
+        setError("Something went wrong while fetching contracts");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchContracts();
+  }, []);
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "summarized":
@@ -63,7 +88,15 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {userContracts.length === 0 ? (
+        {loading ? (
+          <div className="bg-white rounded-2xl shadow-md p-12 text-center">
+            <p className="text-slate-600">Loading your contracts...</p>
+          </div>
+        ) : error ? (
+          <div className="bg-white rounded-2xl shadow-md p-12 text-center">
+            <p className="text-red-600">{error}</p>
+          </div>
+        ) : contracts.length === 0 ? (
           <div className="bg-white rounded-2xl shadow-md p-12 text-center">
             <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <FileText className="w-8 h-8 text-slate-600" />
@@ -80,7 +113,7 @@ export const DashboardPage: React.FC = () => {
           </div>
         ) : (
           <div className="grid gap-6">
-            {userContracts.map((contract) => (
+            {contracts.map((contract) => (
               <div
                 key={contract.id}
                 className="bg-white rounded-2xl shadow-md p-6"
@@ -115,19 +148,19 @@ export const DashboardPage: React.FC = () => {
                           <div>
                             <span className="text-slate-600">Rights:</span>
                             <span className="ml-1 font-medium">
-                              {contract.summary.rights.length}
+                              {contract.summary.rights?.length ?? 0}
                             </span>
                           </div>
                           <div>
                             <span className="text-slate-600">Obligations:</span>
                             <span className="ml-1 font-medium">
-                              {contract.summary.keyObligations.length}
+                              {contract.summary.keyObligations?.length ?? 0}
                             </span>
                           </div>
                           <div>
                             <span className="text-slate-600">Risks:</span>
                             <span className="ml-1 font-medium">
-                              {contract.summary.risks.length}
+                              {contract.summary.risks?.length ?? 0}
                             </span>
                           </div>
                         </div>

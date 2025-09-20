@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -12,21 +12,48 @@ import {
 import { Button } from "../components/ui/Button";
 import { RiskAlert } from "../components/RiskAlert";
 import { Modal } from "../components/ui/Modal";
-import { userContracts } from "../data/dummyData";
+import {
+  type Contract,
+  type ContractSummary,
+  ContractsAPI,
+} from "../api/contractsApi";
 
 export const SummaryPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const [contract, setContract] = useState<Contract | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
-  const contract = userContracts.find((c) => c.id === id);
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    setError(null);
 
-  if (!contract || !contract.summary) {
+    ContractsAPI.getContract(id)
+      .then((res) => setContract(res.data))
+      .catch((err) => {
+        console.error("Failed to load contract", err);
+        setError("Could not load contract details");
+      })
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <p className="text-slate-600">Loading contract summary…</p>
+      </div>
+    );
+  }
+
+  if (error || !contract) {
     return (
       <div className="min-h-screen bg-slate-50 py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-2xl font-bold text-slate-800 mb-4">
-              Contract Not Found
+              {error || "Contract Not Found"}
             </h1>
             <Link to="/dashboard">
               <Button>Back to Dashboard</Button>
@@ -37,7 +64,7 @@ export const SummaryPage: React.FC = () => {
     );
   }
 
-  const { summary } = contract;
+  const summary: ContractSummary | undefined = contract.summary;
 
   return (
     <div className="min-h-screen bg-slate-50 py-8">
@@ -56,7 +83,7 @@ export const SummaryPage: React.FC = () => {
               <h1 className="text-3xl font-bold text-slate-800 mb-2">
                 Contract Analysis
               </h1>
-              <p className="text-slate-600">{summary.title}</p>
+              <p className="text-slate-600">{summary?.title || "Untitled"}</p>
             </div>
 
             <div className="flex gap-3 mt-4 sm:mt-0">
@@ -78,82 +105,90 @@ export const SummaryPage: React.FC = () => {
 
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-6">
-            {/* Rights Section */}
-            <div className="bg-white rounded-2xl shadow-md p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Shield className="w-5 h-5 text-green-600" />
+            {/* Rights */}
+            {summary?.rights && summary.rights.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-md p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <Shield className="w-5 h-5 text-green-600" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-slate-800">
+                    Your Rights
+                  </h2>
                 </div>
-                <h2 className="text-xl font-semibold text-slate-800">
-                  Your Rights
-                </h2>
+                <ul className="space-y-3">
+                  {summary.rights.map((right, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
+                      <span className="text-slate-700">{right}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul className="space-y-3">
-                {summary.rights.map((right, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <span className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></span>
-                    <span className="text-slate-700">{right}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            )}
 
-            {/* Obligations Section */}
-            <div className="bg-white rounded-2xl shadow-md p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <FileText className="w-5 h-5 text-blue-600" />
+            {/* Obligations */}
+            {summary?.keyObligations && summary.keyObligations.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-md p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <FileText className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-slate-800">
+                    Your Obligations
+                  </h2>
                 </div>
-                <h2 className="text-xl font-semibold text-slate-800">
-                  Your Obligations
-                </h2>
+                <ul className="space-y-3">
+                  {summary.keyObligations.map((o, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
+                      <span className="text-slate-700">{o}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul className="space-y-3">
-                {summary.keyObligations.map((obligation, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
-                    <span className="text-slate-700">{obligation}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            )}
 
-            {/* Risks Section */}
-            <div className="bg-white rounded-2xl shadow-md p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <AlertTriangle className="w-5 h-5 text-red-600" />
+            {/* Risks */}
+            {summary?.risks && summary.risks.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-md p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-red-100 rounded-lg">
+                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-slate-800">
+                    Risks & Red Flags
+                  </h2>
                 </div>
-                <h2 className="text-xl font-semibold text-slate-800">
-                  Risks & Red Flags
-                </h2>
+                <div className="space-y-4">
+                  {summary.risks.map((risk) => (
+                    <RiskAlert key={risk.id} risk={risk} />
+                  ))}
+                </div>
               </div>
-              <div className="space-y-4">
-                {summary.risks.map((risk) => (
-                  <RiskAlert key={risk.id} risk={risk} />
-                ))}
-              </div>
-            </div>
+            )}
 
-            {/* Suggested Edits Section */}
-            <div className="bg-white rounded-2xl shadow-md p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Edit className="w-5 h-5 text-blue-600" />
+            {/* Suggested Edits */}
+            {summary?.suggestedEdits && summary.suggestedEdits.length > 0 && (
+              <div className="bg-white rounded-2xl shadow-md p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Edit className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <h2 className="text-xl font-semibold text-slate-800">
+                    Suggested Edits
+                  </h2>
                 </div>
-                <h2 className="text-xl font-semibold text-slate-800">
-                  Suggested Edits
-                </h2>
+                <ul className="space-y-3">
+                  {summary.suggestedEdits.map((edit, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
+                      <span className="text-slate-700">{edit}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <ul className="space-y-3">
-                {summary.suggestedEdits.map((edit, index) => (
-                  <li key={index} className="flex items-start gap-3">
-                    <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></span>
-                    <span className="text-slate-700">{edit}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            )}
           </div>
 
           <div className="space-y-6">
@@ -177,12 +212,16 @@ export const SummaryPage: React.FC = () => {
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600">Risk Level:</span>
-                  <span className="font-medium text-red-600">High</span>
+                  <span className="text-slate-600">Risk Count:</span>
+                  <span className="font-medium text-red-600">
+                    {summary?.risks?.length ?? 0}
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600">Clauses:</span>
-                  <span className="font-medium">24 analyzed</span>
+                  <span className="text-slate-600">Obligations:</span>
+                  <span className="font-medium">
+                    {summary?.keyObligations?.length ?? 0}
+                  </span>
                 </div>
               </div>
             </div>

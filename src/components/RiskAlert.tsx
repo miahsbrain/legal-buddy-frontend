@@ -8,6 +8,13 @@ interface RiskAlertProps {
 
 export const RiskAlert: React.FC<RiskAlertProps> = ({ risk }) => {
   const severityConfig = {
+    critical: {
+      icon: AlertTriangle,
+      bgColor: "bg-red-100",
+      borderColor: "border-red-300",
+      iconColor: "text-red-700",
+      textColor: "text-red-900 font-bold",
+    },
     high: {
       icon: AlertTriangle,
       bgColor: "bg-red-50",

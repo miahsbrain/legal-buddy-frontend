@@ -4,24 +4,40 @@ import { SummaryCard } from "../components/SummaryCard";
 import { Loader } from "../components/ui/Loader";
 import { Button } from "../components/ui/Button";
 import { Modal } from "../components/ui/Modal";
-import { demoContract } from "../data/dummyData";
-import { CreditCard, Download } from "lucide-react";
+import { CreditCard, FileText } from "lucide-react";
+import { ContractsAPI, type Contract } from "../api/contractsApi";
+import { useNavigate } from "react-router-dom";
 
 export const UploadPage: React.FC = () => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [contractSummary, setContractSummary] = useState<Contract | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const handleFileUpload = async (file: File) => {
     setUploadedFile(file);
     setIsProcessing(true);
+    setError(null);
 
-    // Simulate processing time
-    await new Promise((resolve) => setTimeout(resolve, 3000));
+    try {
+      const response = await ContractsAPI.uploadContract(file, file.name);
+      setContractSummary(response.data);
+      setShowSummary(true);
+    } catch (err: any) {
+      console.error("Upload failed", err);
+      setError(err?.response?.data?.error || "Failed to analyze contract");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
-    setIsProcessing(false);
-    setShowSummary(true);
+  const handleViewFullSummary = () => {
+    if (contractSummary?.id) {
+      navigate(`/summary/${contractSummary.id}`);
+    }
   };
 
   const handleUpgrade = () => {
@@ -51,6 +67,11 @@ export const UploadPage: React.FC = () => {
               </div>
             ) : (
               <div className="bg-white rounded-2xl shadow-md p-8">
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-3 mb-4">
+                    {error}
+                  </div>
+                )}
                 <FileUploader onFileUpload={handleFileUpload} />
               </div>
             )}
@@ -63,11 +84,21 @@ export const UploadPage: React.FC = () => {
               </p>
             </div>
 
-            <SummaryCard summary={demoContract} showActions={false} />
+            {contractSummary?.summary && (
+              <SummaryCard
+                summary={contractSummary.summary}
+                showActions={false}
+              />
+            )}
 
             <div className="grid md:grid-cols-2 gap-4">
-              <Button icon={Download} variant="outline" className="w-full">
-                Download Summary (Free)
+              <Button
+                icon={FileText}
+                variant="outline"
+                className="w-full"
+                onClick={handleViewFullSummary}
+              >
+                View Full Summary
               </Button>
               <Button
                 icon={CreditCard}

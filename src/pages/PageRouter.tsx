@@ -20,7 +20,7 @@ export default function PageRouter() {
           <Route element={<MainLayout allowedRoles={["user"]} />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/upload" element={<UploadPage />} />
-            <Route path="/summary" element={<SummaryPage />} />
+            <Route path="/summary/:id" element={<SummaryPage />} />
           </Route>
 
           {/* Public Routes */}
