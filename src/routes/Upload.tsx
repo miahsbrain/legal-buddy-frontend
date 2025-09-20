@@ -9,7 +9,6 @@ import { ContractsAPI, type Contract } from "../api/contractsApi";
 import { useNavigate } from "react-router-dom";
 
 export const UploadPage: React.FC = () => {
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -18,7 +17,6 @@ export const UploadPage: React.FC = () => {
   const navigate = useNavigate();
 
   const handleFileUpload = async (file: File) => {
-    setUploadedFile(file);
     setIsProcessing(true);
     setError(null);
 
@@ -26,9 +24,16 @@ export const UploadPage: React.FC = () => {
       const response = await ContractsAPI.uploadContract(file, file.name);
       setContractSummary(response.data);
       setShowSummary(true);
-    } catch (err: any) {
-      console.error("Upload failed", err);
-      setError(err?.response?.data?.error || "Failed to analyze contract");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        console.error("Upload failed", err);
+        // If it's an AxiosError (assuming you're using axios), you can narrow further
+        const axiosErr = err as { response?: { data?: { error?: string } } };
+        setError(axiosErr.response?.data?.error || err.message);
+      } else {
+        console.error("Unexpected error", err);
+        setError("Failed to analyze contract");
+      }
     } finally {
       setIsProcessing(false);
     }

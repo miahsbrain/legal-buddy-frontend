@@ -6,6 +6,7 @@ import { Button } from "../components/ui/Button";
 export const PricingPage: React.FC = () => {
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
   const [selectedTier, setSelectedTier] = useState<string>("");
+  console.log(selectedTier);
 
   const pricingTiers = [
     {
